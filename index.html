@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>코인 계산기</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      padding: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f4f5f7;
+      font-family: Arial, "Noto Sans KR", sans-serif;
+      color: #171717;
+    }
+
+    .wrap {
+      width: min(900px, 100%);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 20px;
+      padding: 26px;
+      box-shadow: 0 8px 30px rgba(0,0,0,.06);
+    }
+
+    h1, h2 {
+      margin: 0;
+      letter-spacing: -0.5px;
+    }
+
+    h1 { font-size: 24px; margin-bottom: 24px; }
+    h2 { font-size: 19px; margin-bottom: 22px; }
+
+    .field { margin-bottom: 17px; }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #555;
+    }
+
+    .input-wrap {
+      position: relative;
+    }
+
+    input, select {
+      width: 100%;
+      height: 50px;
+      padding: 0 48px 0 14px;
+      border: 1px solid #dedede;
+      border-radius: 11px;
+      background: #fff;
+      color: #111;
+      font-size: 16px;
+      outline: none;
+    }
+
+    select { padding-right: 14px; }
+
+    input:focus, select:focus {
+      border-color: #888;
+    }
+
+    .unit {
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #888;
+      font-size: 13px;
+      pointer-events: none;
+    }
+
+    button {
+      width: 100%;
+      height: 50px;
+      margin-top: 2px;
+      border: 0;
+      border-radius: 11px;
+      background: #181818;
+      color: white;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    button:hover { background: #303030; }
+
+    .button-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 2px;
+    }
+
+    .secondary-button {
+      background: #eeeeee;
+      color: #222;
+    }
+
+    .secondary-button:hover { background: #dddddd; }
+
+    .mini-result {
+      margin-top: 10px;
+      padding: 13px 15px;
+      border-radius: 11px;
+      background: #fafafa;
+      border: 1px solid #eeeeee;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 13px;
+    }
+
+    .mini-result span:first-child { color: #777; }
+    .mini-result span:last-child { font-weight: 700; }
+
+    .copy-btn {
+      margin-top: 10px;
+      height: 40px;
+      background: #f0f0f0;
+      color: #333;
+      font-size: 13px;
+    }
+
+    .copy-btn:hover { background: #e3e3e3; }
+
+    .saved-note {
+      margin-top: 10px;
+      color: #777;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .result {
+      margin-top: 22px;
+      padding: 20px;
+      border-radius: 14px;
+      background: #f7f7f7;
+    }
+
+    .result-label {
+      color: #777;
+      font-size: 13px;
+      margin-bottom: 8px;
+    }
+
+    .big {
+      font-size: 29px;
+      font-weight: 800;
+      letter-spacing: -0.7px;
+      word-break: break-all;
+    }
+
+    .sub {
+      margin-top: 4px;
+      color: #777;
+      font-size: 13px;
+    }
+
+    .line {
+      height: 1px;
+      background: #e8e8e8;
+      margin: 18px 0;
+    }
+
+    .price-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .hint {
+      margin-top: 10px;
+      color: #888;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .error {
+      color: #c33;
+      font-size: 12px;
+      margin-top: 8px;
+      min-height: 16px;
+    }
+
+    @media (max-width: 700px) {
+      body { padding: 14px; }
+      .wrap { grid-template-columns: 1fr; }
+      .card { padding: 22px; }
+    }
+  </style>
+</head>
+<body>
+
+  <main class="wrap">
+
+    <!-- 송금 계산 -->
+    <section class="card">
+      <h1>🪙 코인 계산기</h1>
+
+      <div class="field">
+        <label for="coin">코인 선택</label>
+        <select id="coin" onchange="updateCoin()">
+          <option value="LTC">Litecoin (LTC)</option>
+          <option value="BTC">Bitcoin (BTC)</option>
+          <option value="ETH">Ethereum (ETH)</option>
+          <option value="XRP">XRP</option>
+          <option value="DOGE">Dogecoin (DOGE)</option>
+          <option value="USDT">Tether (USDT)</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="fee">수수료</label>
+        <div class="input-wrap">
+          <input id="fee" type="number" min="0" max="99.999999" step="any"
+                 value="0.5" oninput="calculateTransfer()">
+          <span class="unit">%</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="sendAmount">송금값</label>
+        <div class="input-wrap">
+          <input id="sendAmount" type="number" min="0" step="any"
+                 placeholder="예: 1" oninput="calculateTransfer()">
+          <span class="unit" id="sendUnit">LTC</span>
+        </div>
+      </div>
+
+      <div class="button-row">
+        <button onclick="calculateTransfer()">계산하기</button>
+        <button class="secondary-button" onclick="resetAll()">초기화</button>
+      </div>
+
+      <div class="result">
+        <div class="result-label">입금값 (수수료 차감)</div>
+        <div class="big" id="deposit">0</div>
+        <div class="sub" id="depositUnit">LTC</div>
+        <button class="copy-btn" onclick="copyDeposit()">입금값 복사</button>
+      </div>
+
+      <div class="mini-result">
+        <span>차감된 수수료</span>
+        <span id="feeAmount">0 LTC</span>
+      </div>
+
+      <div class="mini-result">
+        <span>수수료 적용 후 비율</span>
+        <span id="netPercent">0%</span>
+      </div>
+
+      <div class="hint" id="feeInfo">송금값을 입력하면 수수료와 실제 입금값을 보여줍니다.</div>
+    </section>
+
+    <!-- 원화 ↔ 코인 환산 -->
+    <section class="card">
+      <h2>💰 원화 / 코인 환산</h2>
+
+      <div class="field">
+        <label for="won">WON (한국 돈)</label>
+        <div class="input-wrap">
+          <input id="won" type="number" min="0" step="any"
+                 placeholder="예: 100000" oninput="convert()">
+          <span class="unit">원</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="coinAmount">코인 개수</label>
+        <div class="input-wrap">
+          <input id="coinAmount" type="number" min="0" step="any"
+                 placeholder="예: 1" oninput="convert()">
+          <span class="unit" id="coinAmountUnit">LTC</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>1 코인 가격</label>
+        <div class="price-grid">
+          <div class="input-wrap">
+            <input id="coinKrw" type="number" min="0" step="any"
+                   placeholder="한국 가격" oninput="convert()">
+            <span class="unit">원</span>
+          </div>
+          <div class="input-wrap">
+            <input id="coinUsd" type="number" min="0" step="any"
+                   placeholder="달러 가격" oninput="convert()">
+            <span class="unit">USD</span>
+          </div>
+        </div>
+        <div class="hint">실시간 시세를 사용하지 않고 1 코인의 원화/달러 가격을 직접 입력합니다.</div>
+      </div>
+
+      <div class="line"></div>
+
+      <div class="result">
+        <div class="result-label">WON → 코인</div>
+        <div class="big" id="coinResult">0</div>
+        <div class="sub" id="coinResultUnit">LTC</div>
+        <button class="copy-btn" onclick="copyText('coinResult', 'coinResultUnit')">코인 수량 복사</button>
+      </div>
+
+      <div class="result">
+        <div class="result-label">코인 → WON</div>
+        <div class="big" id="wonResult">₩0</div>
+        <button class="copy-btn" onclick="copyText('wonResult')">원화 금액 복사</button>
+      </div>
+
+      <div class="result">
+        <div class="result-label">코인 → USD</div>
+        <div class="big" id="usdResult">$0</div>
+        <button class="copy-btn" onclick="copyText('usdResult')">달러 금액 복사</button>
+      </div>
+
+      <div class="saved-note">💡 가격을 입력하면 브라우저에 자동 저장되어 다음에 다시 사용할 수 있습니다.</div>
+      <div class="error" id="error"></div>
+    </section>
+
+  </main>
+
+  <script>
+    function getCoin() {
+      return document.getElementById("coin").value;
+    }
+
+    function updateCoin() {
+      const coin = getCoin();
+      document.getElementById("sendUnit").textContent = coin;
+      document.getElementById("depositUnit").textContent = coin;
+      document.getElementById("coinAmountUnit").textContent = coin;
+      calculateTransfer();
+      convert();
+    }
+
+    function calculateTransfer() {
+      const amount = Number(document.getElementById("sendAmount").value);
+      const fee = Number(document.getElementById("fee").value);
+      const coin = getCoin();
+
+      if (!Number.isFinite(amount) || !Number.isFinite(fee) || amount < 0 || fee < 0) {
+        document.getElementById("deposit").textContent = "0";
+        document.getElementById("feeAmount").textContent = "0 " + coin;
+        document.getElementById("netPercent").textContent = "0%";
+        document.getElementById("feeInfo").textContent = "올바른 값을 입력해주세요.";
+        return;
+      }
+
+      if (fee >= 100) {
+        document.getElementById("deposit").textContent = "오류";
+        document.getElementById("feeAmount").textContent = "오류";
+        document.getElementById("netPercent").textContent = "오류";
+        document.getElementById("feeInfo").textContent = "수수료는 100% 미만이어야 합니다.";
+        return;
+      }
+
+      const feeAmount = amount * fee / 100;
+      const deposit = amount - feeAmount;
+
+      document.getElementById("deposit").textContent = format(deposit);
+      document.getElementById("depositUnit").textContent = coin;
+      document.getElementById("feeAmount").textContent = format(feeAmount) + " " + coin;
+      document.getElementById("netPercent").textContent = format(100 - fee) + "%";
+      document.getElementById("feeInfo").textContent =
+        `수수료 ${format(feeAmount)} ${coin} · 실제 입금 ${format(deposit)} ${coin}`;
+    }
+
+    function convert() {
+      const won = Number(document.getElementById("won").value);
+      const amount = Number(document.getElementById("coinAmount").value);
+      const coinKrw = Number(document.getElementById("coinKrw").value);
+      const coinUsd = Number(document.getElementById("coinUsd").value);
+      const coin = getCoin();
+
+      document.getElementById("error").textContent = "";
+      savePrices();
+
+      document.getElementById("coinResultUnit").textContent = coin;
+      document.getElementById("coinAmountUnit").textContent = coin;
+
+      // WON → 코인
+      if (!Number.isFinite(won) || won < 0) {
+        document.getElementById("coinResult").textContent = "0";
+      } else if (!Number.isFinite(coinKrw) || coinKrw <= 0) {
+        document.getElementById("coinResult").textContent = "0";
+        if (won > 0) {
+          document.getElementById("error").textContent = "1 코인 가격(원)을 입력해주세요.";
+        }
+      } else {
+        document.getElementById("coinResult").textContent = format(won / coinKrw);
+      }
+
+      // 코인 → 원화
+      if (!Number.isFinite(amount) || amount < 0) {
+        document.getElementById("wonResult").textContent = "₩0";
+      } else if (Number.isFinite(coinKrw) && coinKrw > 0) {
+        document.getElementById("wonResult").textContent = "₩" + format(amount * coinKrw);
+      } else {
+        document.getElementById("wonResult").textContent = "₩0";
+      }
+
+      // 코인 → 달러
+      if (!Number.isFinite(amount) || amount < 0) {
+        document.getElementById("usdResult").textContent = "$0";
+      } else if (Number.isFinite(coinUsd) && coinUsd >= 0) {
+        document.getElementById("usdResult").textContent = "$" + format(amount * coinUsd);
+      } else {
+        document.getElementById("usdResult").textContent = "$0";
+        if (!document.getElementById("error").textContent && amount > 0) {
+          document.getElementById("error").textContent = "1 코인 가격(달러)을 입력해주세요.";
+        }
+      }
+    }
+
+    function savePrices() {
+      localStorage.setItem("coinCalculatorPrices", JSON.stringify({
+        coinKrw: document.getElementById("coinKrw").value,
+        coinUsd: document.getElementById("coinUsd").value
+      }));
+    }
+
+    function loadPrices() {
+      try {
+        const saved = JSON.parse(localStorage.getItem("coinCalculatorPrices"));
+        if (saved) {
+          document.getElementById("coinKrw").value = saved.coinKrw || "";
+          document.getElementById("coinUsd").value = saved.coinUsd || "";
+        }
+      } catch (e) {}
+    }
+
+    async function copyText(id, unitId) {
+      const value = document.getElementById(id).textContent;
+      const unit = unitId ? " " + document.getElementById(unitId).textContent : "";
+      try {
+        await navigator.clipboard.writeText(value + unit);
+      } catch (e) {
+        const area = document.createElement("textarea");
+        area.value = value + unit;
+        document.body.appendChild(area);
+        area.select();
+        document.execCommand("copy");
+        area.remove();
+      }
+    }
+
+    function copyDeposit() {
+      const value = document.getElementById("deposit").textContent;
+      const unit = document.getElementById("depositUnit").textContent;
+      copyTextValue(value + " " + unit);
+    }
+
+    async function copyTextValue(value) {
+      try {
+        await navigator.clipboard.writeText(value);
+      } catch (e) {}
+    }
+
+    function resetAll() {
+      document.getElementById("fee").value = "0.5";
+      document.getElementById("sendAmount").value = "";
+      document.getElementById("won").value = "";
+      document.getElementById("coinAmount").value = "";
+      document.getElementById("deposit").textContent = "0";
+      document.getElementById("feeAmount").textContent = "0 " + getCoin();
+      document.getElementById("netPercent").textContent = "0%";
+      document.getElementById("feeInfo").textContent = "송금값을 입력하면 수수료와 실제 입금값을 보여줍니다.";
+      document.getElementById("coinResult").textContent = "0";
+      document.getElementById("wonResult").textContent = "₩0";
+      document.getElementById("usdResult").textContent = "$0";
+      document.getElementById("error").textContent = "";
+    }
+
+    function format(value) {
+      return Number(value).toLocaleString("en-US", {
+        maximumFractionDigits: 12
+      });
+    }
+
+    loadPrices();
+    updateCoin();
+  </script>
+
+</body>
+</html>
